@@ -32,31 +32,33 @@ public class DamageIndicatorInstance {
     private final Col defaultColor;
     private final Col renderColor = new Col();
     private final Col renderOutlineColor = new Col();
-    @Nullable
-    private final DotStyleEffects.OutlineFX outlineFx;
+    @Nullable private final DotStyleEffects.OutlineFX outlineFx;
 
     private final String mergeKey;
     private final boolean isHeal;
     private final boolean isCrit;
-    @Nullable
-    private final String glyph;
-    @Nullable
-    private final ResourceLocation glyphFont;
-    @Nullable
-    private final Component baseLabel;
+    @Nullable private final String glyph;
+    @Nullable private final ResourceLocation glyphFont;
+    @Nullable private final Component baseLabel;
 
     private float amount;
     private int count = 1;
 
     private final int maxAge;
     private final float spawnAngle;
-    private float spawnOffsetX;
-    private float spawnOffsetY;
+    private float offX;
+    private float offY;
+    private float prevOffX;
+    private float prevOffY;
+    private float velX;
+    private float velY;
     private float zBias;
+    private float textHalfW;
+    private float textHalfH;
 
     private int age;
     private int deathAnimTicks;
-    private int maxDeathTicks = 20;
+    private final int maxDeathTicks = 20;
 
     private MutableComponent component;
     private final Seq<DotStyle> styles = Seq.with();
@@ -82,8 +84,10 @@ public class DamageIndicatorInstance {
         RandomSource rand = entity.getRandom();
         float rawAngle = (rand.nextFloat() * 2.0F - 1.0F) * 32.0F;
         this.spawnAngle = Mth.clamp(rawAngle, -ClientConfig.MIN_ANGLE.get(), ClientConfig.MAX_ANGLE.get());
-        this.spawnOffsetX = (rand.nextFloat() * 2.0F - 1.0F) * 0.30F;
-        this.spawnOffsetY = rand.nextFloat() * 0.15F;
+        this.offX = (rand.nextFloat() * 2.0F - 1.0F) * 0.16F;
+        this.offY = rand.nextFloat() * 0.08F;
+        this.prevOffX = this.offX;
+        this.prevOffY = this.offY;
     }
 
     private void rebuildComponent() {
@@ -99,6 +103,8 @@ public class DamageIndicatorInstance {
             } else {
                 this.component = this.baseLabel.copy().setStyle(labelStyle);
             }
+
+            cacheBounds();
             return;
         }
 
@@ -111,6 +117,8 @@ public class DamageIndicatorInstance {
             } else {
                 this.component = Component.literal(text).setStyle(numberStyle);
             }
+
+            cacheBounds();
             return;
         }
 
@@ -121,16 +129,27 @@ public class DamageIndicatorInstance {
         if (useCritSkull) {
             this.component.append(Component.literal("☠ ").setStyle(addStyle(Style.DEFAULT_FONT)));
         }
+
         if (!hidePresetGlyph && this.glyph != null && !this.glyph.isEmpty()) {
             this.component.append(Component.literal(this.glyph + " ").setStyle(addStyle(this.glyphFont != null ? this.glyphFont : Style.DEFAULT_FONT)));
         }
+
         if (this.isCrit && !useCritSkull) {
             text += "!";
         }
+
         this.component.append(Component.literal(text).setStyle(addStyle(getNumberFont())));
         if (showMultiplier) {
             appendMultiplier();
         }
+
+        cacheBounds();
+    }
+
+    private void cacheBounds() {
+        Font font = Minecraft.getInstance().font;
+        this.textHalfW = font.width(this.component) * 0.5F;
+        this.textHalfH = font.lineHeight * 0.5F;
     }
 
     private DotStyle addStyle(ResourceLocation font) {
@@ -138,6 +157,7 @@ public class DamageIndicatorInstance {
         if (this.outlineFx != null) {
             style.effect(this.outlineFx);
         }
+
         this.styles.add(style);
         return style;
     }
@@ -177,31 +197,116 @@ public class DamageIndicatorInstance {
                 existing.zBias += 0.004F;
             }
         }
-        incoming.separateFromNeighbors(indicators);
+
         indicators.add(incoming);
     }
 
-    private void separateFromNeighbors(Seq<DamageIndicatorInstance> indicators) {
-        if (!hasCloseNeighbor(indicators, this.spawnOffsetX, this.spawnOffsetY)) return;
+    public static void repelAll(Seq<DamageIndicatorInstance> indicators) {
+        int size = indicators.size;
+        if (size == 0) return;
 
-        float[] candidates = {0.38F, -0.38F, 0.72F, -0.72F};
-        for (float offset : candidates) {
-            if (!hasCloseNeighbor(indicators, offset, this.spawnOffsetY)) {
-                this.spawnOffsetX = offset;
-                return;
+        for (int i = 0; i < size; i++) {
+            DamageIndicatorInstance inst = indicators.get(i);
+            inst.prevOffX = inst.offX;
+            inst.prevOffY = inst.offY;
+        }
+
+        float baseScale = 0.04F * Math.max(0.1F, ClientConfig.SCALE.get());
+        for (int i = 0; i < size; i++) {
+            DamageIndicatorInstance a = indicators.get(i);
+            float aw = a.textHalfW * baseScale * a.currentScaleFactor() + 0.05F;
+            float ah = a.textHalfH * baseScale * a.currentScaleFactor() + 0.04F;
+            float ay = a.offY + a.currentRise();
+
+            for (int j = i + 1; j < size; j++) {
+                DamageIndicatorInstance b = indicators.get(j);
+                float bw = b.textHalfW * baseScale * b.currentScaleFactor() + 0.05F;
+                float bh = b.textHalfH * baseScale * b.currentScaleFactor() + 0.04F;
+                float by = b.offY + b.currentRise();
+
+                float dx = a.offX - b.offX;
+                float dy = ay - by;
+                float minDx = aw + bw;
+                float minDy = ah + bh;
+                float nx = dx / minDx;
+                float ny = dy / minDy;
+                float distSq = nx * nx + ny * ny;
+                if (distSq < 1.0F) {
+                    if (distSq < 0.0001F) {
+                        float dir = (j % 2 == 0) ? 1.0F : -1.0F;
+                        a.velX += dir * 0.07F;
+                        b.velX -= dir * 0.07F;
+                        a.velY += 0.03F;
+                    } else {
+                        float dist = Mth.sqrt(distSq);
+                        float push = (1.0F - dist) * 0.14F;
+                        float fx = (nx / dist) * push;
+                        float fy = (ny / dist) * push * 0.85F;
+                        a.velX += fx;
+                        a.velY += fy;
+                        b.velX -= fx;
+                        b.velY -= fy;
+                    }
+                }
             }
         }
-        this.spawnOffsetY += 0.24F;
+
+        for (int i = 0; i < size; i++) {
+            DamageIndicatorInstance inst = indicators.get(i);
+            inst.offX += inst.velX;
+            inst.offY += inst.velY;
+            inst.velX *= 0.72F;
+            inst.velY *= 0.72F;
+            if (inst.offY < 0.0F) {
+                inst.offY *= 0.5F;
+                if (inst.velY < 0.0F) inst.velY = 0.0F;
+            }
+        }
     }
 
-    private boolean hasCloseNeighbor(Seq<DamageIndicatorInstance> indicators, float x, float y) {
-        for (int i = 0; i < indicators.size; i++) {
-            DamageIndicatorInstance other = indicators.get(i);
-            if (other.age <= 5 && Math.abs(x - other.spawnOffsetX) < 0.32F && Math.abs(y - other.spawnOffsetY) < 0.22F) {
-                return true;
-            }
+    private float currentMaxAge() {
+        return this.deathAnimTicks > 0 ? this.maxDeathTicks : this.maxAge;
+    }
+
+    private float currentElapsed(float partialTicks) {
+        float age = this.deathAnimTicks > 0 ? this.deathAnimTicks : this.age;
+        return Math.min(currentMaxAge(), age + partialTicks);
+    }
+
+    private float currentScaleFactor() {
+        return computeScaleFactor(currentElapsed(0.0F), currentMaxAge());
+    }
+
+    private float currentRise() {
+        return computeRise(currentElapsed(0.0F), currentMaxAge());
+    }
+
+    private static float computeScaleFactor(float elapsed, float maxAge) {
+        float inEnd = 2.0F;
+        float settleEnd = 5.5F;
+        float outStart = maxAge * 0.58F;
+        if (elapsed < inEnd) {
+            float t = elapsed / inEnd;
+            float easeOut = 1.0F - (1.0F - t) * (1.0F - t) * (1.0F - t);
+            return Mth.lerp(easeOut, 0.4F, 2.0F);
+        } else if (elapsed < settleEnd) {
+            float t = (elapsed - inEnd) / (settleEnd - inEnd);
+            float smooth = t * t * (3.0F - 2.0F * t);
+            return Mth.lerp(smooth, 1.5F, 1.0F);
+        } else if (elapsed < outStart) {
+            return 1.0F;
+        } else {
+            float t = Mth.clamp((elapsed - outStart) / Math.max(1.0F, maxAge - outStart), 0.0F, 1.0F);
+            return Mth.lerp(t * t, 1.0F, 0.25F);
         }
-        return false;
+    }
+
+    private static float computeRise(float elapsed, float maxAge) {
+        float outStart = maxAge * 0.58F;
+        float popT = Mth.clamp(elapsed / outStart, 0.0F, 1.0F);
+        float popEase = 1.0F - (1.0F - popT) * (1.0F - popT);
+        float flyT = Mth.clamp((elapsed - outStart) / Math.max(1.0F, maxAge - outStart), 0.0F, 1.0F);
+        return popEase * 0.25F + (flyT * flyT) * 0.65F;
     }
 
     private boolean canMerge(DamageIndicatorInstance other, int mergeWindow) {
@@ -286,9 +391,8 @@ public class DamageIndicatorInstance {
     }
 
     public void render(LivingEntity entity, PoseStack poseStack, MultiBufferSource buffer, int packedLight, float partialTicks) {
-        float maxAge = this.deathAnimTicks > 0 ? this.maxDeathTicks : this.maxAge;
-        float age = this.deathAnimTicks > 0 ? this.deathAnimTicks : this.age;
-        float elapsed = Math.min(maxAge, age + partialTicks);
+        float maxAge = currentMaxAge();
+        float elapsed = currentElapsed(partialTicks);
 
         float progress = Mth.clamp(elapsed / maxAge, 0.0F, 1.0F);
         float flashT = Mth.clamp(elapsed / 10F, 0.0F, 1.0F);
@@ -307,30 +411,10 @@ public class DamageIndicatorInstance {
             applyTextColor(this.cachedTextColor);
         }
 
-        float inEnd = 2.0F;
-        float settleEnd = 5.5F;
-        float outStart = maxAge * 0.58F;
-        float scaleFactor;
-        if (elapsed < inEnd) {
-            float t = elapsed / inEnd;
-            float easeOut = 1.0F - (1.0F - t) * (1.0F - t) * (1.0F - t);
-            scaleFactor = Mth.lerp(easeOut, 0.4F, 2.0F);
-        } else if (elapsed < settleEnd) {
-            float t = (elapsed - inEnd) / (settleEnd - inEnd);
-            float smooth = t * t * (3.0F - 2.0F * t);
-            scaleFactor = Mth.lerp(smooth, 1.5F, 1.0F);
-        } else if (elapsed < outStart) {
-            scaleFactor = 1.0F;
-        } else {
-            float t = Mth.clamp((elapsed - outStart) / Math.max(1.0F, maxAge - outStart), 0.0F, 1.0F);
-            scaleFactor = Mth.lerp(t * t, 1.0F, 0.25F);
-        }
-
-        float popT = Mth.clamp(elapsed / outStart, 0.0F, 1.0F);
-        float popEase = 1.0F - (1.0F - popT) * (1.0F - popT);
-        float flyT = Mth.clamp((elapsed - outStart) / Math.max(1.0F, maxAge - outStart), 0.0F, 1.0F);
-        float yRise = 0.25F + this.spawnOffsetY + popEase * 0.25F + (flyT * flyT) * 0.65F;
-        float xDrift = this.spawnOffsetX * (0.4F + 0.6F * popEase);
+        float scaleFactor = computeScaleFactor(elapsed, maxAge);
+        float smoothOffX = Mth.lerp(partialTicks, this.prevOffX, this.offX);
+        float smoothOffY = Mth.lerp(partialTicks, this.prevOffY, this.offY);
+        float yRise = 0.25F + smoothOffY + computeRise(elapsed, maxAge);
         float rollDeg = this.spawnAngle * (1.0F - progress * 0.35F);
         float worldScale = 0.04F * Math.max(0.1F, ClientConfig.SCALE.get()) * scaleFactor;
         float zDepth = this.zBias + progress * 0.08F;
@@ -338,14 +422,14 @@ public class DamageIndicatorInstance {
         poseStack.pushPose();
         poseStack.translate(0.0D, entity.getBbHeight() + ClientConfig.Y_OFFSET.get() + yRise, 0.0D);
         poseStack.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-        poseStack.translate(xDrift, 0.0F, zDepth);
+        poseStack.translate(smoothOffX, 0.0F, zDepth);
         poseStack.mulPose(Axis.ZP.rotationDegrees(rollDeg));
         poseStack.scale(-worldScale, -worldScale, worldScale);
         Matrix4f matrix4f = poseStack.last().pose();
 
         Font font = Minecraft.getInstance().font;
-        float xPos = -font.width(component) / 2.0F;
-        float yPos = -font.lineHeight / 2.0F;
+        float xPos = -this.textHalfW;
+        float yPos = -this.textHalfH;
         int textColor = ((int) (alpha * 255.0F) << 24) | 0xFFFFFF;
         int light = ClientConfig.ADDITIVE.get() ? LightTexture.FULL_BRIGHT : packedLight;
 

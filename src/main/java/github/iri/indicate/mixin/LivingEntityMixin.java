@@ -32,6 +32,7 @@ public class LivingEntityMixin implements ILivingEntityData {
     public void tick(CallbackInfo ci) {
         if (indicate$entity().level().isClientSide()) {
             this.indicate$indicators.removeAll(DamageIndicatorInstance::tick);
+            DamageIndicatorInstance.repelAll(this.indicate$indicators);
         }
     }
 
