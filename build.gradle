@@ -120,7 +120,7 @@ task curseforge(type: TaskPublishCurseForge) {
     apiToken = System.getenv("cursetoken")
     def projectId = "1821419"
     def mainFile = upload(projectId, jar)
-    mainFile.displayName = "Tridot-${version}"
+    mainFile.displayName = "Indicate-${version}"
     mainFile.releaseType = "release"
     mainFile.gameVersions = ["Server", "Client"]
 
