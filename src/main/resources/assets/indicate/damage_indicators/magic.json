@@ -1,0 +1,9 @@
+{
+  "damage_type": [
+    "minecraft:magic",
+    "minecraft:indirect_magic",
+    "minecraft:dragon_breath"
+  ],
+  "color_hex": "c85cff",
+  "outline_color_hex": "250638"
+}

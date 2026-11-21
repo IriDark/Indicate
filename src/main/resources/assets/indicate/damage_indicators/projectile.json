@@ -1,0 +1,6 @@
+{
+  "damage_type": "#minecraft:is_projectile",
+  "color_hex": "dce6f2",
+  "outline_color_hex": "1a222b",
+  "priority": -10
+}

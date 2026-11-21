@@ -1,0 +1,8 @@
+{
+  "damage_type": [
+    "minecraft:starve",
+    "minecraft:dry_out"
+  ],
+  "color_hex": "b8864b",
+  "outline_color_hex": "241608"
+}

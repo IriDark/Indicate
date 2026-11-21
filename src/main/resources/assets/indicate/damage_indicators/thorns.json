@@ -1,0 +1,10 @@
+{
+  "damage_type": [
+    "minecraft:thorns",
+    "minecraft:cactus",
+    "minecraft:sweet_berry_bush",
+    "minecraft:sting"
+  ],
+  "color_hex": "6ecc45",
+  "outline_color_hex": "112607"
+}

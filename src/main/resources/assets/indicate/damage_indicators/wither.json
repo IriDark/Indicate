@@ -1,0 +1,8 @@
+{
+  "damage_type": [
+    "minecraft:wither",
+    "minecraft:wither_skull"
+  ],
+  "color_hex": "7c688a",
+  "outline_color_hex": "140e1a"
+}

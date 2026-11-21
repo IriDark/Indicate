@@ -1,0 +1,12 @@
+{
+  "damage_type": [
+    "#minecraft:is_fall",
+    "minecraft:fly_into_wall",
+    "minecraft:stalagmite",
+    "minecraft:falling_block",
+    "minecraft:falling_anvil",
+    "minecraft:falling_stalactite"
+  ],
+  "color_hex": "d6c5a3",
+  "outline_color_hex": "241e14"
+}
