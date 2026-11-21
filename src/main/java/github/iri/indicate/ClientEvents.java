@@ -4,14 +4,14 @@ import github.iri.indicate.config.*;
 import github.iri.indicate.data.*;
 import net.minecraft.client.*;
 import net.minecraft.world.entity.*;
-import net.minecraftforge.client.event.*;
-import net.minecraftforge.eventbus.api.*;
+import net.neoforged.bus.api.*;
+import net.neoforged.neoforge.client.event.*;
 import pro.komaru.tridot.util.struct.data.*;
 
 public class ClientEvents{
 
     @SubscribeEvent
-    public static void onEntityRender(RenderLivingEvent.Post<LivingEntity, ?> event) {
+    public static void onEntityRender(RenderLivingEvent.Post<?, ?> event) {
         if (!ClientConfig.ENABLED.get()) return;
         LivingEntity entity = event.getEntity();
         if (!(entity instanceof ILivingEntityData data)) return;
@@ -20,7 +20,7 @@ public class ClientEvents{
         Seq<DamageIndicatorInstance> indicators = data.indicate$getIndicators();
         if (indicators.isEmpty()) return;
 
-        float partialTicks = Minecraft.getInstance().getPartialTick();
+        float partialTicks = event.getPartialTick();
         for (DamageIndicatorInstance instance : indicators) {
             instance.render(entity, event.getPoseStack(), event.getMultiBufferSource(), event.getPackedLight(), partialTicks);
         }

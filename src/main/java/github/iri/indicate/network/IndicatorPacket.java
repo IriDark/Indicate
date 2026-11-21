@@ -6,18 +6,22 @@ import github.iri.indicate.data.*;
 import net.minecraft.client.*;
 import net.minecraft.network.*;
 import net.minecraft.network.chat.*;
+import net.minecraft.network.codec.*;
+import net.minecraft.network.protocol.common.custom.*;
 import net.minecraft.resources.*;
 import net.minecraft.world.damagesource.*;
 import net.minecraft.world.entity.*;
-import net.minecraftforge.api.distmarker.*;
-import net.minecraftforge.network.*;
-import pro.komaru.tridot.common.networking.packets.*;
+import net.neoforged.api.distmarker.*;
+import pro.komaru.tridot.api.networking.*;
 import pro.komaru.tridot.util.*;
 
 import javax.annotation.*;
-import java.util.function.*;
 
-public class IndicatorPacket extends ClientPacket {
+public class IndicatorPacket implements Packet {
+    public static final CustomPacketPayload.Type<IndicatorPacket> TYPE = Packet.type(Indicate.ID, "indicator");
+    public static final StreamCodec<RegistryFriendlyByteBuf, IndicatorPacket> STREAM_CODEC =
+            StreamCodec.of((buf, pkt) -> pkt.encode(buf), IndicatorPacket::decode);
+
     public enum Kind {
         DAMAGE,
         HEAL,
@@ -72,7 +76,11 @@ public class IndicatorPacket extends ClientPacket {
     }
 
     @Override
-    public void encode(FriendlyByteBuf buf) {
+    public CustomPacketPayload.Type<? extends CustomPacketPayload> type() {
+        return TYPE;
+    }
+
+    public void encode(RegistryFriendlyByteBuf buf) {
         buf.writeVarInt(this.entityId);
         buf.writeEnum(this.kind);
         if (this.kind == Kind.DAMAGE || this.kind == Kind.HEAL) {
@@ -86,13 +94,13 @@ public class IndicatorPacket extends ClientPacket {
             }
         }
         if (this.kind == Kind.CUSTOM) {
-            buf.writeComponent(this.label != null ? this.label : Component.empty());
+            ComponentSerialization.TRUSTED_STREAM_CODEC.encode(buf, this.label != null ? this.label : Component.empty());
             buf.writeInt(this.colorRgba);
             buf.writeInt(this.outlineRgba);
         }
     }
 
-    public static IndicatorPacket decode(FriendlyByteBuf buf) {
+    public static IndicatorPacket decode(RegistryFriendlyByteBuf buf) {
         int entityId = buf.readVarInt();
         Kind kind = buf.readEnum(Kind.class);
         float amount = (kind == Kind.DAMAGE || kind == Kind.HEAL) ? buf.readFloat() : 0.0F;
@@ -108,7 +116,7 @@ public class IndicatorPacket extends ClientPacket {
         int colorRgba = 0;
         int outlineRgba = 0;
         if (kind == Kind.CUSTOM) {
-            label = buf.readComponent();
+            label = ComponentSerialization.TRUSTED_STREAM_CODEC.decode(buf);
             colorRgba = buf.readInt();
             outlineRgba = buf.readInt();
         }
@@ -117,7 +125,7 @@ public class IndicatorPacket extends ClientPacket {
 
     @Override
     @OnlyIn(Dist.CLIENT)
-    public void execute(Supplier<NetworkEvent.Context> context) {
+    public void doOnClient() {
         if (!ClientConfig.ENABLED.get()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.level == null) return;

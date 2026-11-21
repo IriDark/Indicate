@@ -6,10 +6,9 @@ import net.minecraft.nbt.*;
 import net.minecraft.network.chat.*;
 import net.minecraft.tags.*;
 import net.minecraft.world.entity.*;
-import net.minecraftforge.event.*;
-import net.minecraftforge.event.entity.living.*;
-import net.minecraftforge.event.entity.player.*;
-import net.minecraftforge.eventbus.api.*;
+import net.neoforged.bus.api.*;
+import net.neoforged.neoforge.event.entity.living.*;
+import net.neoforged.neoforge.event.entity.player.*;
 import pro.komaru.tridot.util.*;
 
 public class Events{
@@ -17,8 +16,7 @@ public class Events{
     @SubscribeEvent(priority = EventPriority.LOWEST)
     public void onCrit(CriticalHitEvent event) {
         if (!event.getEntity().level().isClientSide() && event.getTarget() instanceof LivingEntity target) {
-            boolean isCrit = event.getResult() == Event.Result.ALLOW || (event.isVanillaCritical() && event.getResult() == Event.Result.DEFAULT);
-            if (isCrit) {
+            if (event.isCriticalHit()) {
                 target.getPersistentData().putBoolean("indicate:crit", true);
             } else {
                 target.getPersistentData().remove("indicate:crit");
@@ -27,7 +25,7 @@ public class Events{
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST)
-    public void onDamage(LivingDamageEvent event) {
+    public void onDamage(LivingDamageEvent.Post event) {
         LivingEntity entity = event.getEntity();
         if (entity.level().isClientSide()) return;
         if (entity.getType().is(IndicateTags.DAMAGE_INDICATOR_IGNORED)) return;
@@ -36,7 +34,7 @@ public class Events{
             CompoundTag data = entity.getPersistentData();
             boolean crit = data.getBoolean("indicate:crit");
             data.remove("indicate:crit");
-            float amount = Math.max(0.0F, event.getAmount());
+            float amount = Math.max(0.0F, event.getNewDamage());
             if (amount > 0.0F) {
                 IndicateNetwork.sendTracking(entity, IndicatorPacket.damage(entity, event.getSource(), amount, crit));
             }
@@ -56,7 +54,7 @@ public class Events{
     }
 
     @SubscribeEvent(priority = EventPriority.LOWEST, receiveCanceled = true)
-    public void onAttack(LivingAttackEvent event) {
+    public void onAttack(LivingIncomingDamageEvent event) {
         LivingEntity entity = event.getEntity();
         if (entity.level().isClientSide()) return;
         if (entity.getType().is(IndicateTags.DAMAGE_INDICATOR_IGNORED)) return;

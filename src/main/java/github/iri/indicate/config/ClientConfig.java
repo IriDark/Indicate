@@ -1,31 +1,31 @@
 package github.iri.indicate.config;
 
-import net.minecraftforge.common.*;
+import net.neoforged.neoforge.common.*;
 import org.apache.commons.lang3.tuple.*;
 
 public class ClientConfig{
-    public static ForgeConfigSpec.ConfigValue<Integer>
+    public static ModConfigSpec.ConfigValue<Integer>
     MAX_LIFETIME, MERGE_TICKS, MAX_INDICATORS;
 
-    public static ForgeConfigSpec.ConfigValue<Float>
+    public static ModConfigSpec.ConfigValue<Float>
     MIN_ANGLE, MAX_ANGLE, SCALE, Y_OFFSET;
 
-    public static ForgeConfigSpec.ConfigValue<Boolean>
+    public static ModConfigSpec.ConfigValue<Boolean>
     ENABLED, HEALING_RENDERING, USE_CUSTOM_FONT, CRIT_OVERRIDE_PRESET_COLOR, HAS_CRIT_SKULL_GLYPH, CRIT_OVERRIDE_PRESET_GLYPH, SHOW_COMBO_HITS, ADDITIVE, OUTLINE, SHADOW;
 
-    public static ForgeConfigSpec.ConfigValue<String>
+    public static ModConfigSpec.ConfigValue<String>
     CUSTOM_FONT, DAMAGE_COLOR, DAMAGE_OUTLINE_COLOR, HEAL_COLOR, HEAL_OUTLINE_COLOR, CRIT_COLOR, CRIT_OUTLINE_COLOR;
 
     static{
-        final Pair<ClientConfig, ForgeConfigSpec> specPair = new ForgeConfigSpec.Builder().configure(ClientConfig::new);
+        final Pair<ClientConfig, ModConfigSpec> specPair = new ModConfigSpec.Builder().configure(ClientConfig::new);
         SPEC = specPair.getRight();
         INSTANCE = specPair.getLeft();
     }
 
     public static final ClientConfig INSTANCE;
-    public static final ForgeConfigSpec SPEC;
+    public static final ModConfigSpec SPEC;
 
-    public ClientConfig(ForgeConfigSpec.Builder builder){
+    public ClientConfig(ModConfigSpec.Builder builder){
         ENABLED = builder.comment("Specifies if popups will be showcased").define("enabled", true);
         HEALING_RENDERING = builder.comment("Specifies if healing popups will be showcased").define("healingEnabled", true);
 

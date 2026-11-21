@@ -40,7 +40,7 @@ public class DamageDataLoader extends SimpleJsonResourceReloadListener{
                 String outlineHex = GsonHelper.getAsString(json, "outline_color_hex", "000000");
                 Col outline = Col.fromHex(outlineHex);
                 String glyph = json.has("glyph") ? GsonHelper.getAsString(json, "glyph") : null;
-                ResourceLocation font = json.has("font") ? new ResourceLocation(GsonHelper.getAsString(json, "font")) : null;
+                ResourceLocation font = json.has("font") ? ResourceLocation.parse(GsonHelper.getAsString(json, "font")) : null;
                 DamageData.registerFromJson(new DamageData(predicate, glyph, font, color, outline));
             }catch(Exception e){
                 Indicate.LOGGER.error("Failed to load damage indicator {}", entry.getKey(), e);
@@ -76,10 +76,10 @@ public class DamageDataLoader extends SimpleJsonResourceReloadListener{
 
     private Predicate<DamageSource> singlePredicate(String raw) {
         if (raw.startsWith("#")) {
-            TagKey<DamageType> tag = TagKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(raw.substring(1)));
+            TagKey<DamageType> tag = TagKey.create(Registries.DAMAGE_TYPE, ResourceLocation.parse(raw.substring(1)));
             return source -> source.is(tag);
         } else {
-            ResourceKey<DamageType> key = ResourceKey.create(Registries.DAMAGE_TYPE, new ResourceLocation(raw));
+            ResourceKey<DamageType> key = ResourceKey.create(Registries.DAMAGE_TYPE, ResourceLocation.parse(raw));
             return source -> source.is(key);
         }
     }

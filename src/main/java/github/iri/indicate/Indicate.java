@@ -4,12 +4,12 @@ import com.mojang.logging.LogUtils;
 import github.iri.indicate.config.*;
 import github.iri.indicate.network.*;
 import net.minecraft.resources.*;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.*;
-import net.minecraftforge.fml.*;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.config.ModConfig.*;
-import net.minecraftforge.fml.loading.*;
+import net.neoforged.bus.api.*;
+import net.neoforged.fml.*;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.*;
+import net.neoforged.fml.loading.*;
+import net.neoforged.neoforge.common.*;
 import org.slf4j.Logger;
 
 @Mod(Indicate.ID)
@@ -17,18 +17,17 @@ public class Indicate{
     public static final String ID = "indicate";
     public static final Logger LOGGER = LogUtils.getLogger();
 
-    public Indicate(){
-        IndicateNetwork.init();
-        IEventBus forgeBus = MinecraftForge.EVENT_BUS;
-        ModLoadingContext.get().registerConfig(Type.CLIENT, ClientConfig.SPEC);
+    public Indicate(IEventBus modEventBus, ModContainer modContainer){
+        modContainer.registerConfig(ModConfig.Type.CLIENT, ClientConfig.SPEC);
+        modEventBus.addListener(IndicateNetwork::register);
 
-        forgeBus.register(new Events());
+        NeoForge.EVENT_BUS.register(new Events());
         if (FMLEnvironment.dist.isClient()){
-            forgeBus.register(ClientEvents.class);
+            NeoForge.EVENT_BUS.register(ClientEvents.class);
         }
     }
 
     public static ResourceLocation loc(String path) {
-        return new ResourceLocation(ID, path);
+        return ResourceLocation.fromNamespaceAndPath(ID, path);
     }
 }

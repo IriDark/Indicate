@@ -1,7 +1,7 @@
 # **Indicate**
 Informational Utility Mod that add Damage Indicators to Minecraft, they will pop up when anything living takes damage
 
-![showcase.gif](git_img/showcase.gif)
+![showcase.gif](https://raw.githubusercontent.com/IriDark/Indicate/f6e6fc5e12c7137c84ab41c74bee3d8d800a3411/git_img/showcase.gif)
 
 ---
 # **Tech Documentation**

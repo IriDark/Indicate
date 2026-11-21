@@ -1,122 +1,120 @@
-buildscript{
-    repositories{
-        maven{ url = 'https://repo.spongepowered.org/repository/maven-public/' }
-        maven{ url = 'https://maven.parchmentmc.org' }
-        mavenCentral()
-    }
-    dependencies{
-        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
-        classpath 'org.parchmentmc:librarian:1.+'
-    }
-}
-
-plugins{
+plugins {
+    id 'java-library'
     id 'eclipse'
     id 'idea'
-    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
-    id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id 'maven-publish'
+    id 'net.neoforged.moddev' version '2.0.147'
 }
-
-apply plugin: 'org.spongepowered.mixin'
 
 group = mod_group_id
 version = mod_version
 
-base{
+base {
     archivesName = mod_id
 }
 
-java{
-    toolchain.languageVersion = JavaLanguageVersion.of(17)
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
-minecraft{
-    mappings channel: mapping_channel, version: mapping_version
-    copyIdeResources = true
+sourceSets.main.resources { srcDir 'src/generated/resources' }
 
-    runs{
-        configureEach{
-            workingDirectory project.file('run')
-            property 'forge.logging.markers', 'REGISTRIES'
-            property 'forge.logging.console.level', 'debug'
+neoForge {
+    version = project.neo_version
+    parchment {
+        minecraftVersion = project.parchment_minecraft_version
+        mappingsVersion = project.parchment_mappings_version
+    }
 
-            mods{
-                "${mod_id}"{
-                    source sourceSets.main
-                }
-            }
+    runs {
+        configureEach {
+            gameDirectory = project.file('run')
+            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
         }
 
-        client{
-            property 'forge.enabledGameTestNamespaces', mod_id
+        client {
+            client()
         }
 
-        server{
-            property 'forge.enabledGameTestNamespaces', mod_id
-            args '--nogui'
+        server {
+            server()
+            programArgument '--nogui'
         }
 
-        gameTestServer{
-            property 'forge.enabledGameTestNamespaces', mod_id
+        gameTestServer {
+            type = 'gameTestServer'
         }
 
-        data{
-            workingDirectory project.file('run-data')
-            args '--mod', mod_id, '--all', '--output', file('src/generated/resources/'), '--existing', file('src/main/resources/')
+        data {
+            data()
+            gameDirectory = project.file('run-data')
+            programArguments.addAll '--mod', mod_id, '--all',
+                    '--output', file('src/generated/resources/').getAbsolutePath(),
+                    '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
         }
     }
 }
 
-mixin{
-    add sourceSets.main, "${mod_id}.refmap.json"
-    config "${mod_id}.mixins.json"
-}
-
-sourceSets.main.resources{ srcDir 'src/generated/resources' }
-
-repositories{
+repositories {
     mavenLocal()
+    mavenCentral()
     maven { url = "https://repo.komaru.studio/releases" }
 }
 
-dependencies{
-    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
-
-    runtimeOnly fg.deobf("pro.komaru:Tridot:${minecraft_version}-${tridot_version}")
-    compileOnly fg.deobf("pro.komaru:Tridot:${minecraft_version}-${tridot_version}:api")
-
-    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+dependencies {
+    implementation "pro.komaru:Tridot:${minecraft_version}-${tridot_version}"
 }
 
-tasks.named('processResources', ProcessResources).configure{
-    var replaceProperties = [minecraft_version   : minecraft_version, minecraft_version_range: minecraft_version_range,
-                             forge_version       : forge_version, forge_version_range: forge_version_range,
-                             loader_version_range: loader_version_range,
-                             tridot_version_range: tridot_version_range,
-                             mod_id              : mod_id, mod_name: mod_name, mod_license: mod_license, mod_version: mod_version,
-                             mod_authors         : mod_authors, mod_description: mod_description,]
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+            minecraft_version      : minecraft_version,
+            minecraft_version_range: minecraft_version_range,
+            neo_version            : neo_version,
+            neo_version_range      : neo_version_range,
+            loader_version_range   : loader_version_range,
+            tridot_version_range   : tridot_version_range,
+            mod_id                 : mod_id,
+            mod_name               : mod_name,
+            mod_license            : mod_license,
+            mod_version            : mod_version,
+            mod_authors            : mod_authors,
+            mod_description        : mod_description
+    ]
 
     inputs.properties replaceProperties
-
-    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']){
-        expand replaceProperties + [project: project]
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties
     }
 }
 
-tasks.named('jar', Jar).configure{
-    manifest{
-        attributes(["Specification-Title"     : mod_id,
-                    "Specification-Vendor"    : mod_authors,
-                    "Specification-Version"   : "1",
-                    "Implementation-Title"    : project.name,
-                    "Implementation-Version"  : project.jar.archiveVersion,
-                    "Implementation-Vendor"   : mod_authors,
-                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")])
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+                "Specification-Title"     : mod_id,
+                "Specification-Vendor"    : mod_authors,
+                "Specification-Version"   : "1",
+                "Implementation-Title"    : project.name,
+                "Implementation-Version"  : project.jar.archiveVersion,
+                "Implementation-Vendor"   : mod_authors,
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
     }
-
-    finalizedBy 'reobfJar'
 }
 
-tasks.withType(JavaCompile).configureEach{
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
+}
+
+idea {
+    module {
+        downloadSources = true
+        downloadJavadoc = true
+    }
 }

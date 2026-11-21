@@ -422,9 +422,9 @@ public class DamageIndicatorInstance {
         poseStack.pushPose();
         poseStack.translate(0.0D, entity.getBbHeight() + ClientConfig.Y_OFFSET.get() + yRise, 0.0D);
         poseStack.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-        poseStack.translate(smoothOffX, 0.0F, zDepth);
+        poseStack.translate(smoothOffX, 0.0F, -zDepth);
         poseStack.mulPose(Axis.ZP.rotationDegrees(rollDeg));
-        poseStack.scale(-worldScale, -worldScale, worldScale);
+        poseStack.scale(worldScale, -worldScale, worldScale);
         Matrix4f matrix4f = poseStack.last().pose();
 
         Font font = Minecraft.getInstance().font;
@@ -436,7 +436,7 @@ public class DamageIndicatorInstance {
         if (this.outlineFx == null && ClientConfig.SHADOW.get()) {
             applyTextColor(this.cachedShadowColor);
             poseStack.pushPose();
-            poseStack.translate(0.0F, 0.0F, 0.03F);
+            poseStack.translate(0.0F, 0.0F, -0.03F);
             font.drawInBatch(component, xPos + 1.0F, yPos + 1.0F, textColor, false, poseStack.last().pose(), buffer, Font.DisplayMode.NORMAL, 0, light);
             poseStack.popPose();
             applyTextColor(this.cachedTextColor);

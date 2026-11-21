@@ -1,14 +1,14 @@
 package github.iri.indicate;
 
 import github.iri.indicate.data.*;
-import net.minecraftforge.api.distmarker.*;
-import net.minecraftforge.client.event.*;
-import net.minecraftforge.eventbus.api.*;
-import net.minecraftforge.fml.common.*;
+import net.neoforged.api.distmarker.*;
+import net.neoforged.bus.api.*;
+import net.neoforged.fml.common.*;
+import net.neoforged.neoforge.client.event.*;
 
 public class IndicateClient{
 
-    @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+    @EventBusSubscriber(modid = Indicate.ID, value = Dist.CLIENT)
     public static class RegistryEvents{
 
         @SubscribeEvent

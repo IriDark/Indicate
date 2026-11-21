@@ -6,7 +6,7 @@ import github.iri.indicate.network.*;
 import net.minecraft.network.chat.*;
 import net.minecraft.server.level.*;
 import net.minecraft.world.entity.*;
-import net.minecraftforge.fml.loading.*;
+import net.neoforged.fml.loading.*;
 import pro.komaru.tridot.util.*;
 
 /**
