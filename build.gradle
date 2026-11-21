@@ -1,3 +1,5 @@
+import net.darkhax.curseforgegradle.TaskPublishCurseForge
+
 buildscript{
     repositories{
         maven{ url = 'https://repo.spongepowered.org/repository/maven-public/' }
@@ -15,6 +17,8 @@ plugins{
     id 'idea'
     id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
     id 'org.parchmentmc.librarian.forgegradle' version '1.+'
+    id "com.modrinth.minotaur" version "2+"
+    id 'net.darkhax.curseforgegradle' version '1.1.15'
 }
 
 apply plugin: 'org.spongepowered.mixin'
@@ -119,4 +123,28 @@ tasks.named('jar', Jar).configure{
 
 tasks.withType(JavaCompile).configureEach{
     options.encoding = 'UTF-8'
+}
+
+task curseforge(type: TaskPublishCurseForge) {
+    apiToken = System.getenv("cursetoken")
+    def projectId = "1821419"
+    def mainFile = upload(projectId, jar)
+    mainFile.displayName = "Indicate-${version}"
+    mainFile.releaseType = "release"
+    mainFile.gameVersions = ["Server", "Client"]
+
+    mainFile.addGameVersion("${minecraft_version}")
+    mainFile.changelog = "Update"
+    mainFile.addModLoader("Forge", "NeoForge")
+    mainFile.addJavaVersion("Java 17")
+}
+
+modrinth {
+    token = System.getenv("modrinthtoken")
+    projectId = "indicate"
+    versionNumber = "${version}";
+    changelog = "Update"
+    versionType = "release"
+    versionName = "${version}"
+    uploadFile = tasks.jar
 }
