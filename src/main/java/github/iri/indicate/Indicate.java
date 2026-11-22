@@ -8,7 +8,6 @@ import net.neoforged.bus.api.*;
 import net.neoforged.fml.*;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.*;
-import net.neoforged.fml.loading.*;
 import net.neoforged.neoforge.common.*;
 import org.slf4j.Logger;
 
@@ -22,9 +21,6 @@ public class Indicate{
         modEventBus.addListener(IndicateNetwork::register);
 
         NeoForge.EVENT_BUS.register(new Events());
-        if (FMLEnvironment.dist.isClient()){
-            NeoForge.EVENT_BUS.register(ClientEvents.class);
-        }
     }
 
     public static ResourceLocation loc(String path) {
