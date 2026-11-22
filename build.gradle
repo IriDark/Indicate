@@ -129,12 +129,12 @@ task curseforge(type: TaskPublishCurseForge) {
     apiToken = System.getenv("cursetoken")
     def projectId = "1821419"
     def mainFile = upload(projectId, jar)
-    mainFile.displayName = "Indicate-${version}"
+    mainFile.displayName = "Indicate ${minecraft_version}-${version}"
     mainFile.releaseType = "release"
     mainFile.gameVersions = ["Server", "Client"]
 
     mainFile.addGameVersion("${minecraft_version}")
-    mainFile.changelog = "Update"
+    mainFile.changelog = "More compatible rendering appoach"
     mainFile.addModLoader("Forge", "NeoForge")
     mainFile.addJavaVersion("Java 17")
 }
@@ -142,9 +142,9 @@ task curseforge(type: TaskPublishCurseForge) {
 modrinth {
     token = System.getenv("modrinthtoken")
     projectId = "indicate"
-    versionNumber = "${version}";
-    changelog = "Update"
+    versionNumber = "${minecraft_version}-${version}";
+    changelog = "More compatible rendering appoach"
     versionType = "release"
-    versionName = "${version}"
+    versionName = "${minecraft_version}-${version}"
     uploadFile = tasks.jar
 }
