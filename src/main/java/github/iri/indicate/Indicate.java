@@ -9,7 +9,6 @@ import net.minecraftforge.eventbus.api.*;
 import net.minecraftforge.fml.*;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig.*;
-import net.minecraftforge.fml.loading.*;
 import org.slf4j.Logger;
 
 @Mod(Indicate.ID)
@@ -23,9 +22,6 @@ public class Indicate{
         ModLoadingContext.get().registerConfig(Type.CLIENT, ClientConfig.SPEC);
 
         forgeBus.register(new Events());
-        if (FMLEnvironment.dist.isClient()){
-            forgeBus.register(ClientEvents.class);
-        }
     }
 
     public static ResourceLocation loc(String path) {
